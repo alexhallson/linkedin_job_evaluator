@@ -1,6 +1,6 @@
 # LinkedIn Job Scraper & AI Candidate Evaluator
 
-A streamlined workflow automation tool combining a **Firefox Web Extension**, a **FastAPI local backend**, **Google Sheets**, and **Google Gemini AI**. 
+A streamlined workflow automation tool combining a **Firefox Web Extension**, a **FastAPI local backend**, **Google Sheets**, and **OpenAI**. 
 
 It automatically captures job postings from LinkedIn, logs them instantly to a Google Sheet, and runs an asynchronous AI analysis evaluating candidate-to-job fit against your CV using a strict, structured rubric.
 
