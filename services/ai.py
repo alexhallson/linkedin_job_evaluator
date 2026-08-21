@@ -1,15 +1,12 @@
 import json
+import os
 import asyncio
 import time
 from pathlib import Path
-from google import genai
-from google.genai import types
-from config import GEMINI_APIKEY, BASE_DIR
+from openai import AsyncOpenAI
+from config import OPENAI_API_KEY, BASE_DIR
 from models import AIResponse
 
-# Cache for the uploaded file object to avoid re-uploading on every request
-# This persists as long as the uvicorn worker is alive.
-CACHED_FILE_RESOURCE = None
 
 class RateLimiter:
     def __init__(self, interval: float):
@@ -26,48 +23,71 @@ class RateLimiter:
                 await asyncio.sleep(wait_time)
             self.last_run = time.monotonic()
 
-GEMINI_LIMITER = RateLimiter(1.0)
 
-async def get_ai_summary_from_pdf(job_description:str, cv_path: Path, job_title: str = "", job_location: str = ""):
-    """
-    Uploads a local PDF (or uses cached version) and calls Gemini for a concise summary
-    forcing a structured JSON output using native schema enforcement.
-    Uses async operations to avoid blocking the main event loop.
-    Enforces a strict 1s rate limit between requests.
-    """
-    global CACHED_FILE_RESOURCE
-    
-    try:
-        if not GEMINI_APIKEY:
-            return "Error: GEMINI_APIKEY not found in config."
+OPENAI_LIMITER = RateLimiter(1.0)
 
-        # 1. Instantiate Client
+
+def extract_cv_text(cv_path: Path) -> str:
+    """
+    Extract text from a local CV file (.pdf, .docx, or .txt).
+    OpenAI chat completions do not accept raw PDFs, so we extract text locally.
+    """
+    suffix = cv_path.suffix.lower()
+    if suffix == ".txt":
+        return cv_path.read_text(encoding="utf-8", errors="ignore")
+
+    if suffix == ".pdf":
         try:
-            client = genai.Client(api_key=GEMINI_APIKEY)
+            from pypdf import PdfReader
+            reader = PdfReader(str(cv_path))
+            parts = [page.extract_text() or "" for page in reader.pages]
+            return "\n".join(parts)
         except Exception as e:
-            return f"Error initializing Gemini client: {e}"
+            raise RuntimeError(f"Failed to extract text from PDF: {e}")
 
-        # 2. Upload/Get File (Cached)
-        if CACHED_FILE_RESOURCE is None:
-            print("DEBUG: Uploading CV PDF to Gemini (First time)...")
-            try:
-                # Run blocking upload in a separate thread
-                job_doc = await asyncio.to_thread(client.files.upload, file=cv_path)
-                CACHED_FILE_RESOURCE = job_doc
-                print(f"DEBUG: File uploaded successfully: {job_doc.name}")
-            except Exception as e:
-                return f"Error uploading file to Gemini: {e}"
-        else:
-            job_doc = CACHED_FILE_RESOURCE
+    if suffix == ".docx":
+        try:
+            import docx
+            document = docx.Document(str(cv_path))
+            return "\n".join(p.text for p in document.paragraphs)
+        except Exception as e:
+            raise RuntimeError(f"Failed to extract text from DOCX: {e}")
 
-        # 3. Prepare Prompt
+    raise ValueError(f"Unsupported CV file type: {suffix}")
+
+
+async def get_ai_summary_from_pdf(
+    job_description: str,
+    cv_path: Path,
+    job_title: str = "",
+    job_location: str = ""
+):
+    """
+    Extracts text from a local CV and calls OpenAI for a structured evaluation
+    of the candidate against the job description.
+
+    Uses async operations to avoid blocking the event loop and enforces a
+    strict 1s rate limit between requests.
+    """
+    try:
+        if not OPENAI_API_KEY:
+            return "Error: OPENAI_API_KEY not found in config."
+
         try:
             with open(BASE_DIR / "CV_prompt.txt") as f:
                 prompt_content = f.read()
         except FileNotFoundError:
-             return "Error: CV_prompt.txt not found."
+            return "Error: CV_prompt.txt not found."
 
-        prompt = f"""
+        try:
+            cv_text = extract_cv_text(cv_path)
+        except Exception as e:
+            return f"Error reading CV file: {e}"
+
+        system_prompt = f"""You are an expert recruitment analyst.
+
+Evaluate the candidate CV against the job details below according to the rubric.
+
 JOB DETAILS:
 Title: {job_title}
 Location: {job_location}
@@ -77,56 +97,49 @@ JOB DESCRIPTION:
 
 INSTRUCTIONS:
 {prompt_content}
+
+Respond ONLY with a valid JSON object matching the required schema.
 """
 
-        # 4. Generate Content (Async Loop)
+        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
         for i in range(5):
-            await GEMINI_LIMITER.wait()
+            await OPENAI_LIMITER.wait()
             try:
-                # blocking call wrapped in thread
-                response = await asyncio.to_thread(
-                    client.models.generate_content,
-                    model='gemini-3.1-flash-lite', 
-                    contents=[prompt, job_doc],
-                    config={
-                        "response_mime_type": "application/json",
-                        "response_schema": AIResponse,
-                    }
+                response = await client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": f"Candidate CV:\n\n{cv_text}"},
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.2,
                 )
-                
-                if response.text:
-                    response_json = json.loads(response.text)
-                    return response_json
-                else:
+
+                content = response.choices[0].message.content
+                if not content:
                     return "Error: Empty response from AI."
 
-            except Exception as e: 
+                parsed = AIResponse(**json.loads(content))
+                return parsed.model_dump()
+
+            except Exception as e:
                 error_str = str(e)
-                if "429" in error_str or "ResourceExhausted" in error_str:
-                    print(f"Gemini Rate Limited (Attempt {i+1}/5).\nFull Error: {error_str}\nRetrying in 30s...")
-                    await asyncio.sleep(30) # Explicit backoff for rate limit recovery
-                # Handle Expired/Missing File
-                elif "404" in error_str and "files/" in error_str:
-                    print("DEBUG: Cached file seems lost/expired. Re-uploading...")
-                    CACHED_FILE_RESOURCE = None
-                    # We need to break context to re-upload, essentially recursing or just failing this attempt
-                    # Simple fix: return error to force next job or handle re-upload logic better. 
-                    # For now: invalidate cache and return error so user knows to retry?
-                    # Or better: invalidate and allow next loop if possible? 
-                    # The code structure makes re-uploading hard here without recursion.
-                    # Let's return error and let the next call fix it.
-                    return "Error: File resource expired. Please retry."
-                elif "403" in error_str or "PermissionDenied" in error_str:
-                    print("--- GEMINI API 403 FORBIDDEN ---")
-                    return "Summary unavailable (403 Forbidden)."
+                if "rate limit" in error_str.lower() or "429" in error_str:
+                    print(f"OpenAI rate limited (attempt {i+1}/5).\nFull error: {error_str}\nRetrying in 30s...")
+                    await asyncio.sleep(30)
+                elif "invalid_api_key" in error_str.lower() or "401" in error_str:
+                    return "Summary unavailable (Invalid API key)."
+                elif "insufficient_quota" in error_str.lower():
+                    return "Summary unavailable (Quota exceeded)."
                 else:
-                    print(f"Gemini API Error: {error_str}")
-                    if i == 4: return f"Summary unavailable (Error: {error_str})"
-                    
-    except FileNotFoundError:
-        return "Error: Local PDF file not found."
+                    print(f"OpenAI API error: {error_str}")
+                    if i == 4:
+                        return f"Summary unavailable (Error: {error_str})"
+
     except Exception as e:
-        print(f"Unexpected Exception: {str(e)}")
+        print(f"Unexpected exception: {str(e)}")
         return f"Summary unavailable (Error: {str(e)})"
 
     return "Summary unavailable (API failed after retries)."

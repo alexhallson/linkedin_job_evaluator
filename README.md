@@ -10,7 +10,7 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
 
 - **Automated LinkedIn Scraping**: Extract Job Title, Company, Location, URL, and full Job Description directly from LinkedIn Job pages.
 - **Instant Google Sheets Logging**: Appends newly scraped jobs to a target Google Sheet immediately with a `Pending AI...` status.
-- **Asynchronous AI Background Queue**: Background worker processes jobs one-by-one with intelligent rate-limiting to adhere to Gemini API free-tier quotas.
+- **Asynchronous AI Background Queue**: Background worker processes jobs one-by-one with intelligent rate-limiting to adhere to OpenAI API quotas.
 - **Structured 4-Pillar Evaluation Rubric**:
   1. **Experience (Tenure & Industry)** (Score 0.0 - 1.0)
   2. **Skills (Technical & Domain)** (Score 0.0 - 1.0)
@@ -44,8 +44,8 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
                                                                                         │
                                                                                         ▼
                                                                            ┌─────────────────────────┐
-                                                                           │ Google Gemini API       │
-                                                                           │ (gemini-3-flash)        │
+                                                                           │ OpenAI API              │
+                                                                           │ (gpt-4o-mini)           │
                                                                            └─────────────────────────┘
 ```
 
@@ -90,7 +90,7 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
 
 - **Python 3.10+** installed.
 - **Firefox Browser** (version 109+).
-- **Google Gemini API Key** (from [Google AI Studio](https://aistudio.google.com/)).
+- **OpenAI API Key** (from [OpenAI Platform](https://platform.openai.com/)).
 - **Google Cloud Service Account** with **Google Sheets API** and **Google Drive API** enabled.
 
 ---
@@ -117,7 +117,7 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
    ```
    Edit `.env` with your API keys:
    ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
+   OPENAI_API_KEY=your_openai_api_key_here
    GOOGLE_APPLICATION_CREDENTIALS=credentials.json
    SHEET_NAME=Auto Job Scrapes
    ```

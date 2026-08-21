@@ -32,30 +32,19 @@ else:
     else:
         CREDENTIALS_FILE = str(BASE_DIR / "credentials.json")
 
-# 3. Gemini API Key
-GEMINI_APIKEY = os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_APIKEY")
-if not GEMINI_APIKEY:
+# 3. OpenAI API Key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_APIKEY")
+if not OPENAI_API_KEY:
     # Legacy YAML fallback
-    legacy_yaml = BASE_DIR / ".env/GEMINI_API_KEY.yaml"
+    legacy_yaml = BASE_DIR / ".env/OPENAI_API_KEY.yaml"
     if legacy_yaml.exists():
         try:
             with open(legacy_yaml) as f:
-                GEMINI_APIKEY = yaml.safe_load(f)
+                OPENAI_API_KEY = yaml.safe_load(f)
         except Exception as e:
             print(f"Warning: Failed to load legacy {legacy_yaml}: {e}")
 
-# 4. OpenRouter API Key (Optional / Legacy)
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-if not OPENROUTER_API_KEY:
-    legacy_openrouter_yaml = BASE_DIR / ".env/OPENROUTER_API_KEY.yaml"
-    if legacy_openrouter_yaml.exists():
-        try:
-            with open(legacy_openrouter_yaml) as f:
-                OPENROUTER_API_KEY = yaml.safe_load(f)
-        except Exception as e:
-            pass
-
-# 5. Dynamic CV File Resolver
+# 4. Dynamic CV File Resolver
 def get_cv_path() -> Path:
     """
     Dynamically locates candidate CV without requiring hardcoded filenames.
