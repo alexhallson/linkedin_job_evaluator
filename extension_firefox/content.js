@@ -84,55 +84,109 @@ class ToastManager {
 const toastManager = new ToastManager();
 
 function extractJobData() {
-    let title = "N/A";
-    let company = "N/A";
-    let location = "N/A";
-    let description = "N/A";
+    return {
+        title: extractTitle(),
+        company: extractCompany(),
+        location: extractLocation(),
+        link: buildJobLink(),
+        description: extractDescription()
+    };
+}
 
-    // --- 1. EXTRACT TITLE ---
-    // Look for h1, main job links, or legacy top card titles
-    const titleEl = document.querySelector('h1') || 
-                    document.querySelector('a[href*="/jobs/view/"]') ||
-                    document.querySelector('.job-details-jobs-unified-top-card__job-title');
-    if (titleEl) {
-        title = titleEl.innerText.trim();
+function extractTitle() {
+    // New layout: the job title is the visible text of the link to /jobs/view/{id}.
+    const viewLink = document.querySelector('a[href*="/jobs/view/"]');
+    if (viewLink) {
+        const text = viewLink.textContent.trim();
+        if (text && text.length > 2 && text.length < 300) {
+            return text;
+        }
     }
 
-    // --- 2. EXTRACT COMPANY ---
-    // Find links pointing to company pages or elements with company aria-labels
-    const companyEl = document.querySelector('a[href*="/company/"]') ||
-                      document.querySelector('[aria-label*="Company"]') ||
-                      document.querySelector('.job-details-jobs-unified-top-card__company-name');
-    if (companyEl) {
-        company = companyEl.innerText.trim();
+    // Legacy fallbacks
+    const legacy = document.querySelector('.job-details-jobs-unified-top-card__job-title') ||
+                   document.querySelector('h1');
+    if (legacy) {
+        return legacy.textContent.trim();
     }
 
-    // --- 3. EXTRACT LOCATION ---
-    // Strategy A: Find text containing location-like patterns near metadata spans
-    const metadataSpans = Array.from(document.querySelectorAll('span')).filter(el => {
-        const text = el.innerText.trim();
-        // Match common location formats (e.g., "London, England, United Kingdom" or "Melbourne, Victoria")
-        return text.includes(',') && !text.includes('Reposted') && !text.includes('clicked apply');
-    });
+    return "N/A";
+}
 
-    if (metadataSpans.length > 0) {
-        location = metadataSpans[0].innerText.trim();
-    } else {
-        // Strategy B: Legacy fallbacks
-        location = document.querySelector('.job-details-jobs-unified-top-card__bullet')?.innerText?.trim() ||
-                   document.querySelector('.job-details-jobs-unified-top-card__workplace-type')?.innerText?.trim() ||
-                   "N/A";
+function extractCompany() {
+    // New layout: LinkedIn exposes an aria-label like "Company, Scale AI."
+    const companyWrapper = document.querySelector('[aria-label^="Company, "]');
+    if (companyWrapper) {
+        const label = companyWrapper.getAttribute('aria-label');
+        const match = label.match(/^Company,\s*(.+?)\.?$/);
+        if (match && match[1]) {
+            return match[1].trim();
+        }
     }
 
-    // --- 4. EXTRACT DESCRIPTION ---
-    const descriptionEl = document.querySelector('#job-details') ||
-                          document.querySelector('.jobs-description__content') ||
-                          document.querySelector('[class*="description"]');
-    if (descriptionEl) {
-        description = descriptionEl.innerText.trim();
+    // Fallback: company link text
+    const companyLink = document.querySelector('a[href*="/company/"]');
+    if (companyLink) {
+        const text = companyLink.textContent.trim();
+        if (text && text.length > 0 && text.length < 200) {
+            return text;
+        }
     }
 
-    // --- 5. URL CONSTRUCTION ---
+    return "N/A";
+}
+
+function extractLocation() {
+    // Strategy 1: Location sits in the same metadata paragraph as "Reposted".
+    // Find the "Reposted" element and walk backwards to the previous meaningful sibling.
+    const repostedEl = Array.from(document.querySelectorAll('span, p, div, li')).find(el =>
+        /Reposted/i.test(el.textContent)
+    );
+    if (repostedEl && repostedEl.parentElement) {
+        let sibling = repostedEl.previousElementSibling;
+        while (sibling) {
+            const text = sibling.textContent?.trim();
+            if (text && text.length > 0 && text.length < 200 && !/·/u.test(text)) {
+                return text;
+            }
+            sibling = sibling.previousElementSibling;
+        }
+    }
+
+    // Strategy 2: scan spans for location-like text.
+    const noise = /Reposted|clicked|apply|people|ago|Full-time|Part-time|Contract|Internship|Salary|\$/i;
+    for (const span of document.querySelectorAll('span')) {
+        const text = span.textContent.trim();
+        if (!text || text.length < 2 || text.length > 200) continue;
+        if (noise.test(text)) continue;
+        // City, State/Country or City, Region, Country
+        if (/^[A-Za-z][A-Za-z\s\-]+,\s*[A-Za-z][A-Za-z\s\-]+/.test(text)) {
+            return text;
+        }
+    }
+
+    return "N/A";
+}
+
+function extractDescription() {
+    // New layout uses a generic expandable text box for the job description.
+    const expandable = document.querySelector('[data-testid="expandable-text-box"]');
+    if (expandable) {
+        return expandable.textContent.trim();
+    }
+
+    // Legacy fallbacks
+    const legacy = document.querySelector('#job-details') ||
+                   document.querySelector('.jobs-description__content') ||
+                   document.querySelector('[class*="jobs-description"]');
+    if (legacy) {
+        return legacy.textContent.trim();
+    }
+
+    return "N/A";
+}
+
+function buildJobLink() {
     let cleanLink = window.location.href.split('?')[0];
     const urlParams = new URLSearchParams(window.location.search);
     const currentJobId = urlParams.get('currentJobId');
@@ -141,13 +195,7 @@ function extractJobData() {
         cleanLink = `https://www.linkedin.com/jobs/view/${currentJobId}/`;
     }
 
-    return {
-        title: title || "N/A",
-        company: company || "N/A",
-        location: location || "N/A",
-        link: cleanLink,
-        description: description || "N/A"
-    };
+    return cleanLink;
 }
 
 let lastSavedDescriptionHash = "";
@@ -192,22 +240,29 @@ function startPollingForJob(triggerUrl) {
 function attemptSave(targetUrl) {
     const jobData = extractJobData();
 
-    // 1. Check if description is loaded
-    if (!jobData.description || jobData.description.length < 50) {
+    // 1. Wait until all critical fields are loaded
+    if (!jobData.description || jobData.description.length < 100) {
         // console.debug("Description too short or missing, waiting...");
         return;
     }
 
-    // 2. Check for Stale Data (Description hasn't changed from previous job)
+    if (jobData.title === "N/A" || jobData.company === "N/A") {
+        // console.debug("Title or company not yet available, waiting...");
+        return;
+    }
+
+    // 2. Make sure we are actually on a job page
+    if (!jobData.link || !/\/jobs\/view\/\d+/i.test(jobData.link)) {
+        // console.debug("Not a recognizable job page URL, skipping.");
+        return;
+    }
+
+    // 3. Check for Stale Data (Description hasn't changed from previous job)
     const currentHash = simpleHash(jobData.description);
     if (currentHash === lastSavedDescriptionHash) {
         // console.debug("Description matches last saved job. Likely stale DOM. Waiting...");
         return;
     }
-
-    // 3. Check for Stale Title (Title mismatch with URL logic if possible, 
-    // but mostly relying on description change is safer for now).
-    // Sometimes the URL updates before the title in the DOM does.
 
     // Found valid, new content!
     stopPolling();
@@ -217,6 +272,15 @@ function attemptSave(targetUrl) {
 function saveJob(jobData, hash) {
     lastSavedDescriptionHash = hash;
     lastProcessedUrl = jobData.link;
+
+    // Final guard against incomplete data reaching the backend
+    if (!jobData.title || jobData.title === "N/A" ||
+        !jobData.company || jobData.company === "N/A" ||
+        !jobData.description || jobData.description.length < 100) {
+        console.warn("Refusing to save job with incomplete data:", jobData);
+        toastManager.show(`⚠️ Incomplete job data, skipping.`, 'error');
+        return;
+    }
 
     console.log("Auto-saving job:", jobData.title);
     toastManager.show(`Saving ${jobData.title}...`, 'info');
