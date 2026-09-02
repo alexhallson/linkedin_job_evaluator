@@ -113,8 +113,15 @@ Respond ONLY with a valid JSON object matching the required schema.
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": f"Candidate CV:\n\n{cv_text}"},
                     ],
-                    response_format={"type": "json_object"},
-                    temperature=1,
+                    response_format={
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": "AIResponse",
+                            "schema": AIResponse.model_json_schema(),
+                            "strict": True,
+                        },
+                    },
+                    temperature=0.1,
                 )
 
                 content = response.choices[0].message.content
