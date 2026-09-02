@@ -101,8 +101,8 @@ INSTRUCTIONS:
 Respond ONLY with a valid JSON object matching the required schema.
 """
 
-        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=os.getenv("OPENAI_BASE_URL"))
+        model = os.getenv("OPENAI_MODEL", "kimi-k3")
 
         for i in range(5):
             await OPENAI_LIMITER.wait()
@@ -114,11 +114,11 @@ Respond ONLY with a valid JSON object matching the required schema.
                         {"role": "user", "content": f"Candidate CV:\n\n{cv_text}"},
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.2,
+                    temperature=1,
                 )
 
                 content = response.choices[0].message.content
-                if not content:
+                if not content: 
                     return "Error: Empty response from AI."
 
                 parsed = AIResponse(**json.loads(content))
