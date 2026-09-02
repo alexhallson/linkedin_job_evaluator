@@ -39,3 +39,26 @@ def test_ai_response_valid():
     assert response.skills_score == 0.85
     assert response.visa_eligibility_score == 1.0
     assert response.cultural_fit_score == 0.8
+
+
+def test_ai_response_flattens_internal_memo():
+    response = AIResponse(
+        internal_memo={
+            "experience_analysis": "Strong Python experience",
+            "experience_score": 0.9,
+            "skills_analysis": "FastAPI and Docker match well",
+            "skills_score": 0.85,
+            "visa_eligibility_analysis": "Local candidate, no sponsorship needed",
+            "visa_eligibility_score": 1.0,
+            "cultural_fit_analysis": "Startup experience matches company phase",
+            "cultural_fit_score": 0.8,
+            "strengths": ["Python", "FastAPI"],
+        }
+    )
+    assert response.experience_analysis == "Strong Python experience"
+    assert response.experience_score == 0.9
+    assert response.skills_score == 0.85
+    assert response.visa_eligibility_score == 1.0
+    assert response.cultural_fit_score == 0.8
+    assert response.internal_memo is not None
+    assert response.internal_memo["strengths"] == ["Python", "FastAPI"]
