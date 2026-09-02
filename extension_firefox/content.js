@@ -246,6 +246,12 @@ function attemptSave(targetUrl) {
         return;
     }
 
+    // Wait until the user has expanded the full description
+    if (jobData.description.endsWith('… more')) {
+        // console.debug("Description is truncated, waiting for expansion...");
+        return;
+    }
+
     if (jobData.title === "N/A" || jobData.company === "N/A") {
         // console.debug("Title or company not yet available, waiting...");
         return;
