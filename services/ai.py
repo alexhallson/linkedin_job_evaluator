@@ -122,6 +122,8 @@ Respond ONLY with a valid JSON object matching the required schema.
                         },
                     },
                     temperature=1, # kimi only accepts 1
+                    reasoning_effort="low",
+                    stream=False
                 )
 
                 content = response.choices[0].message.content
