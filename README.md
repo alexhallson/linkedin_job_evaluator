@@ -123,7 +123,12 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
    ```
 
 4. **Add Google Service Account Key**:
-   Download your Google Cloud Service Account JSON key file, save it as `credentials.json` in the root directory.
+   Download your Google Cloud Service Account JSON key file and save it in the root directory.
+   The backend auto-detects common filenames such as `linkedin-data-*.json`, `credentials.json`, or `service_account.json`.
+   You can also use any filename/path by setting `GOOGLE_APPLICATION_CREDENTIALS` in `.env`:
+   ```env
+   GOOGLE_APPLICATION_CREDENTIALS=linkedin-data-484009-fbcd1a2ffce1.json
+   ```
 
 5. **Set Up Google Sheets**:
    - Create a new Google Spreadsheet titled `Auto Job Scrapes` (or match `SHEET_NAME` in `.env`).
