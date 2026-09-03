@@ -1,0 +1,41 @@
+# Secrets, Credentials, & Environment Configuration
+.env
+.env/
+*.env
+*.yaml
+linkedin-data-*.json
+credentials.json
+service_account.json
+
+# Personal Candidate CV Files
+# Ignores all personal CVs placed inside CVs/ while keeping the folder structure (.gitkeep)
+/CVs/*
+/CVs/.gitkeep
+*.pdf
+*.docx
+!CVs_sample/*.pdf
+!CVs_sample/*.docx
+!CVs_sample/*.txt
+
+# Application Runtime & Cache State
+usage_stats.json
+*.log
+
+# Python Cache & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+*.egg-info/
+
+# IDEs & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+# Aider
+.aider*
+.aider.chat.history.md
