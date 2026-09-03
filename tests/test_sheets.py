@@ -1,12 +1,12 @@
 from unittest.mock import patch, MagicMock
 from services.sheets import get_google_sheet
 
-@patch("services.sheets.ServiceAccountCredentials")
+@patch("services.sheets.Credentials")
 @patch("services.sheets.gspread")
 def test_get_google_sheet(mock_gspread, mock_creds_cls):
     mock_creds = MagicMock()
     mock_creds.service_account_email = "test@service.com"
-    mock_creds_cls.from_json_keyfile_name.return_value = mock_creds
+    mock_creds_cls.from_service_account_file.return_value = mock_creds
     
     mock_client = MagicMock()
     mock_spreadsheet = MagicMock()

@@ -75,4 +75,4 @@ async def test_get_ai_summary_uses_structured_output(tmp_path, monkeypatch):
     assert call_kwargs["response_format"]["json_schema"]["name"] == "AIResponse"
     assert call_kwargs["response_format"]["json_schema"]["strict"] is True
     assert "schema" in call_kwargs["response_format"]["json_schema"]
-    assert call_kwargs["temperature"] == 0.1
+    assert call_kwargs["temperature"] == 1
