@@ -7,6 +7,16 @@ from openai import AsyncOpenAI
 from config import OPENAI_API_KEY, BASE_DIR
 from models import AIResponse
 
+try:
+    from pypdf import PdfReader
+except ImportError:  # pragma: no cover
+    PdfReader = None
+
+try:
+    import docx
+except ImportError:  # pragma: no cover
+    docx = None
+
 
 class RateLimiter:
     def __init__(self, interval: float):
@@ -37,8 +47,9 @@ def extract_cv_text(cv_path: Path) -> str:
         return cv_path.read_text(encoding="utf-8", errors="ignore")
 
     if suffix == ".pdf":
+        if PdfReader is None:
+            raise RuntimeError("pypdf is not installed")
         try:
-            from pypdf import PdfReader
             reader = PdfReader(str(cv_path))
             parts = [page.extract_text() or "" for page in reader.pages]
             return "\n".join(parts)
@@ -46,8 +57,9 @@ def extract_cv_text(cv_path: Path) -> str:
             raise RuntimeError(f"Failed to extract text from PDF: {e}")
 
     if suffix == ".docx":
+        if docx is None:
+            raise RuntimeError("python-docx is not installed")
         try:
-            import docx
             document = docx.Document(str(cv_path))
             return "\n".join(p.text for p in document.paragraphs)
         except Exception as e:

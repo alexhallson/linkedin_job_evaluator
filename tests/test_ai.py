@@ -153,6 +153,9 @@ async def test_get_ai_summary_rate_limit_retry(tmp_path, monkeypatch):
         side_effect=Exception("rate limit 429")
     )
 
+    mock_limiter = AsyncMock()
+    monkeypatch.setattr("services.ai.OPENAI_LIMITER", mock_limiter)
+
     with patch("services.ai.AsyncOpenAI", return_value=mock_client):
         with patch("services.ai.asyncio.sleep", new=AsyncMock()) as mock_sleep:
             result = await get_ai_summary_from_pdf("JD", cv_file)
