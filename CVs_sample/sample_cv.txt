@@ -1,0 +1,26 @@
+# SAMPLE CANDIDATE CURRICULUM VITAE
+
+## Profile
+Senior Software Engineer with 5+ years of experience building scalable web applications, REST APIs, and automated data collection tools.
+
+## Skills
+- Programming Languages: Python, JavaScript, TypeScript
+- Frameworks & Tools: FastAPI, Node.js, Docker, PostgreSQL, Google Cloud Platform (GCP)
+- AI & ML Tools: OpenAI API, Google Gemini API, Prompt Engineering
+- Scraping & Automation: BeautifulSoup, Playwright, Selenium, Chrome/Firefox Extensions
+
+## Work Experience
+
+### Senior Backend Engineer | TechCorp Inc.
+*2022 - Present*
+- Designed and maintained microservices using Python (FastAPI) handling 1M+ daily API requests.
+- Integrated LLM workflows for automated text summarization and information extraction.
+- Mentored junior engineers and led sprint planning.
+
+### Software Engineer | DataFlow Solutions
+*2020 - 2022*
+- Developed web scrapers and browser extensions to aggregate industry metrics.
+- Optimized database queries, reducing response times by 35%.
+
+## Education
+- B.Sc. in Computer Science | Tech University (2016 - 2020)
