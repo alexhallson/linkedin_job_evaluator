@@ -1,4 +1,4 @@
-# LinkedIn Job Scraper & AI Candidate Evaluator
+# Automatic Linkedin Copy/Paster & Job Scorer
 
 A streamlined workflow automation tool combining a **Firefox Web Extension**, a **FastAPI local backend**, **Google Sheets**, and **OpenAI**. 
 
@@ -8,8 +8,8 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
 
 ## 🌟 Key Features
 
-- **Automated LinkedIn Scraping**: Extract Job Title, Company, Location, URL, and full Job Description directly from LinkedIn Job pages.
-- **Instant Google Sheets Logging**: Appends newly scraped jobs to a target Google Sheet immediately with a `Pending AI...` status.
+- **Automated LinkedIn ScraCopy/pasting**: Extract Job Title, Company, Location, URL, and full Job Description directly from LinkedIn Job pages.
+- **Instant Google Sheets Logging**: Appends newly copied jobs to a target Google Sheet immediately with a `Pending AI...` status.
 - **Asynchronous AI Background Queue**: Background worker processes jobs one-by-one with intelligent rate-limiting to adhere to OpenAI API quotas.
 - **Structured 4-Pillar Evaluation Rubric**:
   1. **Experience (Tenure & Industry)** (Score 0.0 - 1.0)
@@ -36,7 +36,7 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
                                             ▼                                           ▼
                                 ┌───────────────────────┐                  ┌─────────────────────────┐
                                 │ Google Sheets         │                  │ AI Async Background     │
-                                │ (Auto Job Scrapes)    │                  │ Worker (Rate Limiter)   │
+                                │                       │                  │ Worker (Rate Limiter)   │
                                 └───────────▲───────────┘                  └────────────┬────────────┘
                                             │                                           │
                                             │ 4. Update Rows with AI Scores             │ 3. Evaluate CV
@@ -45,7 +45,7 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
                                                                                         ▼
                                                                            ┌─────────────────────────┐
                                                                            │ OpenAI API              │
-                                                                           │ (default: gpt-4o-mini)  │
+                                                                           │                         │
                                                                            └─────────────────────────┘
 ```
 
@@ -99,8 +99,8 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/linkedin_scrape_extension.git
-   cd linkedin_scrape_extension
+   git clone https://github.com/your-username/linkedin_job_evaluator.git
+   cd linkedin_job_evaluator
    ```
 
 2. **Set Up Python Environment**:
@@ -119,7 +119,7 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
    ```env
    OPENAI_API_KEY=your_openai_api_key_here
    GOOGLE_APPLICATION_CREDENTIALS=credentials.json
-   SHEET_NAME=Auto Job Scrapes
+   SHEET_NAME=<Your Sheet Name>
    ```
 
    Optional: set `OPENAI_MODEL` and `OPENAI_BASE_URL` in `.env` if you want to use a different model or an OpenAI-compatible provider (e.g., Kimi, Together).
@@ -161,7 +161,7 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
    uvicorn main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-2. **Scrape Jobs on LinkedIn**:
+2. **Copy/Paste Jobs on LinkedIn**:
    - Open Firefox and navigate to any LinkedIn Job search or job post (`https://www.linkedin.com/jobs/*`).
    - Click on a job posting to view its details.
    - The extension automatically extracts the job data and sends it to `http://localhost:8000/add-job`.
