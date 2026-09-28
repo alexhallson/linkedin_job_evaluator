@@ -199,7 +199,7 @@ function buildJobLink() {
 }
 
 let lastSavedDescriptionHash = "";
-let isPolicing = false;
+let isPolling = false;
 let pollingInterval;
 let pollingTimeout;
 
@@ -217,27 +217,27 @@ function simpleHash(str) {
 function stopPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     if (pollingTimeout) clearTimeout(pollingTimeout);
-    isPolicing = false;
+    isPolling = false;
 }
 
-function startPollingForJob(triggerUrl) {
+function startPollingForJob() {
     stopPolling();
-    isPolicing = true;
+    isPolling = true;
 
     // Safety timeout: stop trying after 10 seconds
     pollingTimeout = setTimeout(() => {
-        if (isPolicing) {
+        if (isPolling) {
             console.log("Polling timed out - could not find new stable content.");
             stopPolling();
         }
     }, 10000);
 
     pollingInterval = setInterval(() => {
-        attemptSave(triggerUrl);
+        attemptSave();
     }, 100);
 }
 
-function attemptSave(targetUrl) {
+function attemptSave() {
     const jobData = extractJobData();
 
     // 1. Wait until all critical fields are loaded
@@ -318,12 +318,11 @@ const api = typeof browser !== 'undefined' ? browser : chrome;
 api.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'URL_CHANGED') {
         console.log("URL Changed to:", message.url);
-        startPollingForJob(message.url);
+        startPollingForJob();
     }
 });
 
 // Initial run (in case we load on a job page directly)
 setTimeout(() => {
-    const initialUrl = window.location.href;
-    startPollingForJob(initialUrl);
+    startPollingForJob();
 }, 1000);

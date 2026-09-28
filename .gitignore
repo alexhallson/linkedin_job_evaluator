@@ -10,7 +10,7 @@ service_account.json
 # Personal Candidate CV Files
 # Ignores all personal CVs placed inside CVs/ while keeping the folder structure (.gitkeep)
 /CVs/*
-/CVs/.gitkeep
+!/CVs/.gitkeep
 *.pdf
 *.docx
 !CVs_sample/*.pdf
