@@ -45,7 +45,7 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
                                                                                         ▼
                                                                            ┌─────────────────────────┐
                                                                            │ OpenAI API              │
-                                                                           │ (gpt-4o-mini)           │
+                                                                           │ (default: gpt-4o-mini)  │
                                                                            └─────────────────────────┘
 ```
 
@@ -121,6 +121,8 @@ It automatically captures job postings from LinkedIn, logs them instantly to a G
    GOOGLE_APPLICATION_CREDENTIALS=credentials.json
    SHEET_NAME=Auto Job Scrapes
    ```
+
+   Optional: set `OPENAI_MODEL` and `OPENAI_BASE_URL` in `.env` if you want to use a different model or an OpenAI-compatible provider (e.g., Kimi, Together).
 
 4. **Add Google Service Account Key**:
    Download your Google Cloud Service Account JSON key file and save it in the root directory.

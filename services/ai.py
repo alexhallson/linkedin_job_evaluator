@@ -114,7 +114,7 @@ Respond ONLY with a valid JSON object matching the required schema.
 """
 
         client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=os.getenv("OPENAI_BASE_URL"))
-        model = os.getenv("OPENAI_MODEL", "kimi-k3")
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
         for i in range(5):
             await OPENAI_LIMITER.wait()
